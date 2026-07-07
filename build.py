@@ -1,7 +1,9 @@
 import requests
 from bs4 import BeautifulSoup
 import html, datetime, time
+from datetime import timezone, timedelta
 
+KST = timezone(timedelta(hours=9))
 CHANNELS = [
     "tazastock",
     "darthacking",
@@ -200,7 +202,7 @@ section{{scroll-margin-top:104px;margin-bottom:6px}}
   <div class="sticky-top">
     <div class="topbar">
       <h1>텔레그램 모음</h1>
-      <span class="upd">업데이트 {datetime.datetime.now():%Y-%m-%d %H:%M}</span>
+      <span class="upd">업데이트 {datetime.datetime.now(KST):%Y-%m-%d %H:%M} (KST)</span>
     </div>
     <div class="nav">{nav}</div>
   </div>
@@ -209,7 +211,7 @@ section{{scroll-margin-top:104px;margin-bottom:6px}}
 """
     with open("index.html", "w", encoding="utf-8") as f:
         f.write(page)
-    print(f"✅ 완료! 채널 {len(sections)}개 저장. ({datetime.datetime.now():%Y-%m-%d %H:%M})")
+    print(f"OK 완료! 채널 {len(sections)}개 저장. ({datetime.datetime.now(KST):%Y-%m-%d %H:%M})")
 
 
 if __name__ == "__main__":
