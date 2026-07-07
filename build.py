@@ -3,7 +3,8 @@ from bs4 import BeautifulSoup
 import html, datetime, time
 from datetime import timezone, timedelta
 
-KST = timezone(timedelta(hours=9))
+KST = timezone(timedelta(hours=9))   # 한국 시간대 (UTC+9)
+
 CHANNELS = [
     "tazastock",
     "darthacking",
@@ -17,7 +18,7 @@ CHANNELS = [
     "pickachu_aje",
     "mootda",
     "Yeouido_Lab",
-]   # 여기에 방 이름들 나열
+]   # 여기에 공개방 이름들 나열
 
 MAX_POSTS = 40      # 채널당 가져올 글 수
 
@@ -41,6 +42,23 @@ def avatar_for(name):
     return c1, c2, letter
 
 
+def to_kst(iso_str):
+    """텔레그램의 UTC 시간 문자열을 한국시간 'MM-DD HH:MM'으로 변환."""
+    if not iso_str:
+        return ""
+    s = iso_str.strip()
+    if s.endswith("Z"):
+        s = s[:-1] + "+00:00"
+    try:
+        dt = datetime.datetime.fromisoformat(s)
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt.astimezone(KST).strftime("%m-%d %H:%M")
+    except Exception:
+        # 변환 실패 시 앞에 ? 를 붙여 눈에 띄게 (원인 파악용)
+        return "?" + s[5:16].replace("T", " ")
+
+
 def fetch_channel(channel):
     """채널 하나에서 최신 글 MAX_POSTS개를 가져온다."""
     url = f"https://t.me/s/{channel}"
@@ -56,7 +74,7 @@ def fetch_channel(channel):
             res = requests.get(page_url, headers={"User-Agent": "Mozilla/5.0"}, timeout=30)
             res.raise_for_status()
         except Exception as e:
-            print(f"⚠️ {channel} 가져오기 실패: {e}")
+            print(f"WARN {channel} 가져오기 실패: {e}")
             break
 
         soup = BeautifulSoup(res.text, "html.parser")
@@ -115,7 +133,7 @@ def build_page():
         bubbles = "".join(
             f'<div class="msg"><div class="bubble">'
             f'<div class="c">{p["text"]}</div>'
-            f'<div class="meta">{html.escape(p["time"][5:16].replace("T"," "))}</div>'
+            f'<div class="meta">{html.escape(to_kst(p["time"]))}</div>'
             f'</div></div>'
             for p in posts
         ) or '<div class="empty">글을 가져오지 못했어요.</div>'
@@ -131,8 +149,10 @@ def build_page():
             f'</section>'
         )
 
+    now_kst = datetime.datetime.now(KST)
     page = f"""<!doctype html><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="refresh" content="120">
 <title>텔레그램 모음</title>
 <style>
 *{{box-sizing:border-box}}
@@ -202,7 +222,7 @@ section{{scroll-margin-top:104px;margin-bottom:6px}}
   <div class="sticky-top">
     <div class="topbar">
       <h1>텔레그램 모음</h1>
-      <span class="upd">업데이트 {datetime.datetime.now(KST):%Y-%m-%d %H:%M} (KST)</span>
+      <span class="upd">업데이트 {now_kst:%Y-%m-%d %H:%M} (KST)</span>
     </div>
     <div class="nav">{nav}</div>
   </div>
@@ -211,7 +231,7 @@ section{{scroll-margin-top:104px;margin-bottom:6px}}
 """
     with open("index.html", "w", encoding="utf-8") as f:
         f.write(page)
-    print(f"OK 완료! 채널 {len(sections)}개 저장. ({datetime.datetime.now(KST):%Y-%m-%d %H:%M})")
+    print(f"OK 완료! 채널 {len(sections)}개 저장. ({now_kst:%Y-%m-%d %H:%M} KST)")
 
 
 if __name__ == "__main__":
