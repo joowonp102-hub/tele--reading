@@ -49,7 +49,7 @@ def fetch_channel(channel):
     # 페이지당 약 20개라서 3페이지면 40개는 충분히 채워짐 (안전장치)
     for _ in range(3):
         page_url = url + (f"?before={before}" if before else "")
-        time.sleep(0.3)
+        time.sleep(0.1)
         try:
             res = requests.get(page_url, headers={"User-Agent": "Mozilla/5.0"}, timeout=30)
             res.raise_for_status()
